@@ -20,7 +20,7 @@ gpasswd -a admin wheel
 # --- GLOBAL VARIABLES ---
 # Open HTTP / HTTPS
 TCP_PORTS=( 80 443 )
-GO_VERSION="1.19.2"
+GO_VERSION="1.19.1"
 
 # --- ENVIRONMENT VARIABLES ---
 /bin/cat << EOM >> /home/admin/.bash_profile
@@ -59,6 +59,33 @@ esac
 dnf install -y epel-release
 
 
+
+echo "--- Ensure All Packages Are Up To Date  ---"
+echo "-------------------------------------------"
+dnf update -y
+
+
+
+echo "--- Installing Useful Packages ---"
+echo "----------------------------------"
+# Installing useful packages
+dnf install -y wget unzip make autoconf automake libtool pam-devel
+
+
+
+echo "--- Install git and git lfs ---"
+echo "-------------------------------"
+# Remove old git packages
+dnf remove -y git
+# Install git
+dnf install -y git 
+# Install git lfs
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.rpm.sh | bash
+dnf install -y git-lfs
+git lfs install
+
+
+
 case "$INSTALL_GITLAB_RUNNER" in
       y|Y ) echo "Installing Gitlab Runner...";
             # Install Gitlab Runner
@@ -84,7 +111,14 @@ esac
 echo "--- Enable 2FA ---"
 echo "---------------------"
 # Install 2FA
-dnf install -y google-authenticator
+git clone https://github.com/google/google-authenticator-libpam
+cd google-authenticator-libpam
+./bootstrap.sh
+./configure
+make
+make install
+cd /root
+rm -rf google-authenticator-libpam
 # Setup 2FA as admin user
 sudo -u admin -H sh -c "google-authenticator"
 
@@ -211,19 +245,6 @@ EOM
 
 
 
-echo "--- Installing Useful Packages ---"
-echo "----------------------------------"
-# Installing useful packages
-dnf install -y wget unzip
-
-
-
-echo "--- Insure All Packages Are Up To Date  ---"
-echo "-------------------------------------------"
-dnf update -y
-
-
-
 echo "--- Creating Swap File ---"
 echo "--------------------------"
 # Create swapfile
@@ -248,19 +269,6 @@ dnf install -y ntp
 # Start ntp
 systemctl enable ntpd
 systemctl start ntpd
-
-
-
-echo "--- Install git and git lfs ---"
-echo "-------------------------------"
-# Remove old git packages
-dnf remove -y git
-# Install git
-dnf install -y git 
-# Install git lfs
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.rpm.sh | bash
-dnf install -y git-lfs
-git lfs install
 
 
 
